@@ -2,44 +2,50 @@
 """
 Alex Lindeman
 2016-08-14
-Returns interfaces monitored by vnstat as database dumps, via HTTP requests.
+Displays images from vnstati via HTTP requests.
 """
 
-import os, subprocess, sys, threading
+import os, subprocess
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 from SocketServer import TCPServer
 
-if not subprocess.check_output(["which", "vnstat"]):
-	print "vnstat does not appear to be installed"
+if not subprocess.check_output(["which", "vnstati"]):
+	print "vnstati does not appear to be installed"
 	os.abort()
 
 listen = ("0.0.0.0", 7654)
 dir = "/var/lib/vnstat"
 
+if not os.path.isdir(dir)
+	print "non-standard vnstat database directories are not currently supported"
+	os.abort()
+
 interfaces = sorted([ iface for iface in os.listdir(dir) if not iface.startswith(".") ])
 
-class VnstatHandler(SimpleHTTPRequestHandler):
+class VnstatiHandler(SimpleHTTPRequestHandler):
 	def do_GET(self):
 
 		code = 200
 		iface = self.path[1:]
+		valid = iface in interfaces
 
-		if self.path == "/":
-			response = "available interfaces: %s" % ", ".join(interfaces)
-		elif iface in interfaces:
-			response = subprocess.check_output(["vnstat", "-i", iface, "--dumpdb"])
+		if valid:
+			response = subprocess.check_output(["vnstati", "-s", "-i", iface, "-o", "-"])
+		elif self.path == "/":
+			response = "available interfaces: %s\n" % ", ".join(interfaces)
 		else:
 			code = 404
-			response = "that interface does not exist"
+			response = "that interface does not exist or is not monitored\n"
 
 		self.send_response(code)
-		self.send_header("Content-Type", "text/plain; charset=utf-8")
+		self.send_header("Content-Type", "image/png" if valid else "text/plain; charset=utf-8")
 		self.end_headers()
-		self.wfile.write(response + "\n")
+		self.wfile.write(response)
+
+handler = VnstatiHandler
+httpd = TCPServer(listen, handler)
 
 try:
-	handler = VnstatHandler
-	httpd = TCPServer(listen, handler)
 	print "listening on %s:%s from %s" % (listen[0], listen[1], dir)
 	print "available interfaces: %s" % ", ".join(interfaces)
 	httpd.serve_forever()
