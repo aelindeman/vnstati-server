@@ -1,0 +1,12 @@
+[Unit]
+Description=vnstat database HTTP server
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/vnstat-server
+Restart=always
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
+

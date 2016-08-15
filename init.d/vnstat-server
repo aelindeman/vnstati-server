@@ -1,0 +1,63 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          vnstat-server
+# Required-Start:    $local_fs $remote_fs $network
+# Required-Stop:     $local_fs $remote_fs $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: vnstat data server
+### END INIT INFO
+
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+DESC="vnstat database HTTP server"
+NAME=vnstat-server
+DAEMON=/usr/local/bin/$NAME
+DAEMON_ARGS=""
+PIDFILE=/var/run/$NAME.pid
+SCRIPTNAME=/etc/init.d/vnstat-server
+
+. /lib/lsb/init-functions
+
+start() {
+    log_daemon_msg "Starting $DESC" "$NAME"
+    start-stop-daemon --start --background --pidfile $PIDFILE --make-pidfile --quiet --exec $DAEMON -- $DAEMON_ARGS
+    log_end_msg $?
+}
+
+stop() {
+    log_daemon_msg "Stopping $DESC" "$NAME"
+    start-stop-daemon --stop --quiet --pidfile $PIDFILE --retry=TERM/15/KILL/5 --name $NAME
+    log_end_msg $?
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        stop
+        sleep 5
+        start
+        ;;
+    status)
+        pidofproc -p $PIDFILE $DAEMON >/dev/null
+        status=$?
+
+        if [ $status -eq 0 ]; then
+                log_success_msg "$DESC is running"
+        else
+                log_failure_msg "$DESC is not running"
+        fi
+        exit $status
+        ;;
+
+    *)
+        echo "Usage: $0 {start|stop|restart|status}"
+        exit 1
+        ;;
+esac
+
+exit 0
