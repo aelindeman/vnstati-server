@@ -5,7 +5,8 @@ Alex Lindeman
 Displays images from vnstati via HTTP requests.
 """
 
-import os, subprocess
+import os
+import subprocess
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 from SocketServer import TCPServer
 
