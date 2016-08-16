@@ -9,18 +9,20 @@ import os, subprocess
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 from SocketServer import TCPServer
 
-if not subprocess.check_output(["which", "vnstati"]):
+try:
+	subprocess.check_output(["which", "vnstati"])
+except:
 	print "vnstati does not appear to be installed"
-	os.abort()
+	exit()
 
 listen = ("0.0.0.0", 7654)
-dir = "/var/lib/vnstat"
+wd = "/var/lib/vnstat"
 
-if not os.path.isdir(dir)
+if not os.path.isdir(wd):
 	print "non-standard vnstat database directories are not currently supported"
-	os.abort()
+	exit()
 
-interfaces = sorted([ iface for iface in os.listdir(dir) if not iface.startswith(".") ])
+interfaces = sorted([ iface for iface in os.listdir(wd) if not iface.startswith(".") ])
 
 class VnstatiHandler(SimpleHTTPRequestHandler):
 	def do_GET(self):
@@ -46,7 +48,7 @@ handler = VnstatiHandler
 httpd = TCPServer(listen, handler)
 
 try:
-	print "listening on %s:%s from %s" % (listen[0], listen[1], dir)
+	print "listening on %s:%s from %s" % (listen[0], listen[1], wd)
 	print "available interfaces: %s" % ", ".join(interfaces)
 	httpd.serve_forever()
 
