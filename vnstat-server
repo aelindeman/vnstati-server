@@ -7,6 +7,7 @@ Displays images from vnstati via HTTP requests.
 
 import os
 import subprocess
+from argparse import ArgumentParser
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 from SocketServer import TCPServer
 
@@ -16,8 +17,14 @@ except:
 	print "vnstati does not appear to be installed"
 	exit()
 
-listen = ("0.0.0.0", 7654)
-wd = "/var/lib/vnstat"
+argparser = ArgumentParser(prog="vnstati-server", description="HTTP server for vnstati")
+argparser.add_argument("-l", "--listen", nargs=1, default="0.0.0.0", help="Address to listen on")
+argparser.add_argument("-p", "--port", nargs=1, default=7654, help="Port on which to listen")
+argparser.add_argument("-d", "--dbdir", nargs=1, default="/var/lib/vnstat", help="vnstat database directory")
+args = argparser.parse_args()
+
+listen = (args.listen, args.port)
+wd = args.dbdir
 
 if not os.path.isdir(wd):
 	print "non-standard vnstat database directories are not currently supported"
@@ -33,7 +40,7 @@ class VnstatiHandler(SimpleHTTPRequestHandler):
 			try:
 				iface, type = self.path.lstrip('/').rstrip('/').split('/')
 			except:
-				raise Exception("usage: /<interface>/<type>\n\tinterfaces: %s\n\ttypes: %s" % (", ".join(interfaces), ", ".join(types)))
+				raise Exception("usage: %s:%i/<interface>/<type>\n\tinterfaces: %s\n\ttypes: %s" % (listen[0], listen[1], ", ".join(interfaces), ", ".join(types)))
 
 			if iface not in interfaces:
 				raise Exception("invalid interface\n\tinterfaces: %s\n" % ", ".join(interfaces))
