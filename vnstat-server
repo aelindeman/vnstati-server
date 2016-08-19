@@ -24,26 +24,34 @@ if not os.path.isdir(wd):
 	exit()
 
 interfaces = sorted([ iface for iface in os.listdir(wd) if not iface.startswith(".") ])
+types = sorted(['d', 'h', 'm', 's', 't'])
 
 class VnstatiHandler(SimpleHTTPRequestHandler):
 	def do_GET(self):
+		response = None
+		try:
+			try:
+				iface, type = self.path.lstrip('/').rstrip('/').split('/')
+			except:
+				raise Exception("usage: /<interface>/<type>\n\tinterfaces: %s\n\ttypes: %s" % (", ".join(interfaces), ", ".join(types)))
 
-		code = 200
-		iface = self.path[1:]
-		valid = iface in interfaces
+			if iface not in interfaces:
+				raise Exception("invalid interface\n\tinterfaces: %s\n" % ", ".join(interfaces))
 
-		if valid:
-			response = subprocess.check_output(["vnstati", "-s", "-i", iface, "-o", "-"])
-		elif self.path == "/":
-			response = "available interfaces: %s\n" % ", ".join(interfaces)
+			if type not in types:
+				raise Exception("invalid type\n\ttypes: %s\n" % ", ".join(types))
+
+		except Exception as e:
+			self.send_response(400)
+			self.send_header("Content-Type", "text/plain; charset=utf-8")
+			response = "%s\n" % e
 		else:
-			code = 404
-			response = "that interface does not exist or is not monitored\n"
-
-		self.send_response(code)
-		self.send_header("Content-Type", "image/png" if valid else "text/plain; charset=utf-8")
-		self.end_headers()
-		self.wfile.write(response)
+			self.send_response(200)
+			self.send_header("Content-Type", "image/png")
+			response = subprocess.check_output(["vnstati", "-%s" % type, "-i", iface, "-o", "-"])
+		finally:
+			self.end_headers()
+			self.wfile.write(response)
 
 handler = VnstatiHandler
 httpd = TCPServer(listen, handler)
