@@ -1,29 +1,35 @@
-# vnstat database HTTP server
+# vnstati-server
 
-Exports vnstat data as text via HTTP requests on port 7654.
-
-This makes it easy to periodically fetch or dump vnstat data onto another machine that does not have or need vnstat installed.
+Makes [`vnstati`](vnstati) images available through HTTP requests, to port 8000 by default.
 
 ## Requirements
 
-The host machine (where `vnstat-server` will be running) should have `vnstat` installed.
+The host machine (where `vnstati-server` will be running) must have `vnstat` and `vnstati` installed.
 
 ## Installing
 
 Copy the binary:
 
-    sudo cp vnstat-server /usr/local/bin/
+    sudo cp vnstati-server /usr/local/bin/
 
-Then add the appropriate init script, if you'd like to run it as a service at boot, to its appropriate folder in `/etc`.
+Install an init script:
+
+    sudo cp systemd/vnstati-server.service /etc/systemd/system/
 
 ## Using the server
 
-Go to <http://localhost:7654> and you should see something like:
+Go to <http://localhost:8000> and you should see a help page with these instructions:
 
-    available interfaces: eth0, ...
+    usage: localhost:8000/:interface/:type
+      interfaces: eth0, ...
+      types: d, h, m, s, t
 
-You can then go to <http://localhost:7654/eth0> (or any other interface name) and see a dump of `vnstat`'s data for that interface.
+Replace `:interface` with the interface you'd like data for and `:type` with the image format you'd like. You can see examples of each image on [`vnstati`'s man page.][vnstati]
 
-## Credits
+## Author
 
-- Alex Lindeman - <hello@ael.me>
+- [Alex Lindeman]
+
+[Alex Lindeman]: http://github.com/aelindeman
+[vnstati]: http://humdi.net/vnstat/
+

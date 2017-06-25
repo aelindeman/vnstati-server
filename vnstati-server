@@ -1,0 +1,77 @@
+#!/usr/bin/python
+"""
+Alex Lindeman
+2016-08-14
+Displays images from vnstati via HTTP requests.
+"""
+
+import os
+import subprocess
+from argparse import ArgumentParser
+from SimpleHTTPServer import SimpleHTTPRequestHandler
+from SocketServer import TCPServer
+
+argparser = ArgumentParser(prog="vnstati-server", description="HTTP server for vnstati")
+argparser.add_argument("-l", "--listen", nargs=1, default="0.0.0.0", help="Address to listen on")
+argparser.add_argument("-p", "--port", nargs=1, default=8000, help="Port on which to listen")
+argparser.add_argument("-d", "--dbdir", nargs=1, default="/var/lib/vnstat", help="vnstat database directory")
+argparser.add_argument("-b", "--binary", nargs=1, default="/usr/bin/vnstati", help="path to the vnstati binary")
+args = argparser.parse_args()
+
+listen = (args.listen, args.port)
+ex = args.binary
+wd = args.dbdir
+
+if not os.path.isfile(ex):
+  print "%s does not appear to be an executable" % ex
+  exit(1)
+
+if not os.path.isdir(wd):
+  print "%s does not appear to be a directory" % wd
+  exit(1)
+
+interfaces = sorted([iface for iface in os.listdir(wd) if not iface.startswith(".")])
+types = sorted(['d', 'h', 'm', 's', 't'])
+
+class VnstatiHandler(SimpleHTTPRequestHandler):
+  def do_GET(self):
+    response = None
+    try:
+      try:
+        iface, type = self.path.lstrip('/').rstrip('/').split('/')
+      except:
+        raise ValueError("usage: %s:%i/:interface/:type\n\tinterfaces: %s\n\ttypes: %s" % (listen[0], listen[1], ", ".join(interfaces), ", ".join(types)))
+
+      if iface not in interfaces:
+        raise ValueError("invalid interface\n\tinterfaces: %s\n" % ", ".join(interfaces))
+
+      if type not in types:
+        raise ValueError("invalid type\n\ttypes: %s\n" % ", ".join(types))
+
+      response = subprocess.check_output([ex, "-%s" % type, "-i", iface, "-o", "-"])
+    except (subprocess.CalledProcessError, ValueError) as err:
+      codes = {
+        "CalledProcessError": 500,
+        "ValueError": 400
+      }
+      self.send_response(codes[type(err).__name__])
+      self.send_header("Content-Type", "text/plain; charset=utf-8")
+      response = "%s\n" % err
+    else:
+      self.send_response(200)
+      self.send_header("Content-Type", "image/png")
+    finally:
+      self.end_headers()
+      self.wfile.write(response)
+
+handler = VnstatiHandler
+httpd = TCPServer(listen, handler)
+
+try:
+  print "listening on %s:%s from %s" % (listen[0], listen[1], wd)
+  print "available interfaces: %s" % ", ".join(interfaces)
+  httpd.serve_forever()
+
+except:
+  print "cleaning up"
+  httpd.socket.close()
