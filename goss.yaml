@@ -1,0 +1,23 @@
+file:
+  '/usr/local/bin/vnstati-server':
+    exists: true
+    filetype: file
+    mode: '0755'
+http:
+  'http://localhost:8000/':
+    status: 400
+package:
+  python2.7:
+    installed: true
+  vnstat:
+    installed: true
+  vnstati:
+    installed: true
+port:
+  tcp:8080:
+    listening: true
+    ip:
+      - 0.0.0.0
+process:
+  python2.7:
+    running: true

@@ -1,0 +1,15 @@
+dist: xenial
+services:
+  - docker
+
+env:
+  global:
+    - GOSS_PATH="./goss"
+
+before_install:
+  - curl -Lo goss https://github.com/aelsabbahy/goss/releases/download/0.3.5/goss-linux-amd64 && chmod +rw goss
+  - curl -Lo dgoss https://raw.githubusercontent.com/aelsabbahy/goss/4f1f0e424299df1dfa90c404ba4b35ee9ac358c5/extras/dgoss/dgoss && chmod +rx dgoss
+  - docker build -t vnstati-server-test .
+
+script:
+  - ./dgoss run vnstati-server-test
